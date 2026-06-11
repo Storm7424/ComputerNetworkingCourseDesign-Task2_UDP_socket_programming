@@ -11,7 +11,6 @@ StudentID=2715
 bitmask=0x5A3C
 count=30
 WINDOWSIZE=400
-string="Hello, I'm Xu Tao, a student from class Computer Science 24-1, student ID 241002715."
 
 # 报文各个字段依次为：
 # seq(4B), ack(4B), id(2B), data_length(2B), ACK(1bit), SYN(1bit), FIN(1bit), 保留位5bit, 服务器系统时间时、分、秒分别占1B, 共计16B
@@ -56,20 +55,12 @@ except:
     sys.exit(1)
 
 sock=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
-try:
-    sock.connect((serverIP, serverPort))
-    log("正在建立连接")
-except:
-    print(f"连接服务器失败")
-    log("建立连接失败")
-    sock.close()
-    sys.exit(1)
 
 curseq=0
 # 三次握手其一
 try:
     log(f"发送三次握手其一，SYN=1,seq={curseq}")
-    sock.sendall(packMessage(curseq,0,StudentID^bitmask,0,1,0,b''))
+    sock.sendto(packMessage(curseq,0,StudentID^bitmask,0,1,0,b''),(serverIP,serverPort))
 except:
     print("三次握手其一失败")
     log("发送三次握手其一失败")
@@ -78,7 +69,7 @@ except:
 # 三次握手其二
 sock.settimeout(curTimeoutInterval)
 try:
-    agree_message=sock.recv(16)
+    agree_message=sock.recvfrom(16)[0]
     if(len(agree_message)<16):
         raise RuntimeError
     seq,ack,id,length,ACK,SYN,FIN,_,_,_=unpackMessage(agree_message)
@@ -95,7 +86,7 @@ curseq=ack
 curack=seq+1
 try:
     log(f"发送三次握手其三，ACK=1，seq={curseq}，ack={curack}")
-    sock.sendall(packMessage(curseq,curack,0,1,0,0,b''))
+    sock.sendto(packMessage(curseq,curack,0,1,0,0,b''),(serverIP,serverPort))
 except:
     print("三次握手其三失败")
     log("发送三次握手其三失败")
@@ -106,10 +97,20 @@ except:
 dataCollection=[]
 dataLength=[]
 sendingCount=0
-for i in range(count):
-    length=random.randint(40,80)
-    dataCollection.append(string[:length].encode())
-    dataLength.append(length)
+curpos=0
+try:
+    with open("text.txt","r") as text:
+        string=text.read()
+        for i in range(count):
+            length = random.randint(40, 80)
+            dataCollection.append(string[curpos:length + curpos].encode())
+            curpos += length
+            dataLength.append(length)
+except:
+    print("读文件错误")
+    sock.close()
+    sys.exit(1)
+
 sendTime={}
 RTTCollection=[]
 leftBorder=0
@@ -118,14 +119,14 @@ while(leftBorder<count):
     while(rightBorder<count and sum(dataLength[leftBorder:rightBorder+1])<=WINDOWSIZE):
         curdata=dataCollection[rightBorder]
         log(f"发送第{rightBorder+1}个数据报（共计{count}个），第{sum(dataLength[:rightBorder])+1}~{sum(dataLength[:rightBorder+1])}个字节已经发送，seq={rightBorder}，len={len(curdata)}")
-        sock.sendall(packMessage(rightBorder,0,0,1,0,0,curdata))
+        sock.sendto(packMessage(rightBorder,0,0,1,0,0,curdata),(serverIP,serverPort))
         print(f"第{rightBorder+1}个（第{sum(dataLength[:rightBorder])+1}~{sum(dataLength[:rightBorder+1])}字节）client端已经发送")
         sendingCount+=1
         sendTime[rightBorder]=time.time()
         rightBorder+=1
     sock.settimeout(curTimeoutInterval)
     try:
-        ack_message=sock.recv(16)
+        ack_message=sock.recvfrom(16)[0]
         if(len(ack_message)<16):
             raise RuntimeError
         seq,ack,id,length,ACK,SYN,FIN,hour,minute,second=unpackMessage(ack_message)
@@ -145,7 +146,7 @@ while(leftBorder<count):
             curdata = dataCollection[i]
             log(f"重传第{i+1}个数据报（共计{count}个），第{sum(dataLength[:i])+1}~{sum(dataLength[:i+1])}个字节已经发送，seq={i}，len={len(curdata)}")
             print(f"重传第{i+1}个（第{sum(dataLength[:i])+1}~{sum(dataLength[:i+1])}字节）数据包")
-            sock.sendall(packMessage(i, 0, 0, 1, 0, 0, curdata))
+            sock.sendto(packMessage(i, 0, 0, 1, 0, 0, curdata),(serverIP,serverPort))
             sendingCount+=1
             sendTime[i]=time.time()
 
@@ -154,7 +155,7 @@ curseq=ack
 curack=seq+1
 try:
     log(f"发送四次挥手其一，FIN=1，seq={curseq}")
-    sock.sendall(packMessage(curseq,0,0,1,0,1,b''))
+    sock.sendto(packMessage(curseq,0,0,1,0,1,b''),(serverIP,serverPort))
 except:
     print("四次挥手其一失败")
     log("接收四次挥手其一失败")
@@ -162,7 +163,7 @@ except:
     sys.exit(1)
 # 四次挥手其二
 try:
-    seq,ack,id,length,ACK,SYN,FIN,_,_,_=unpackMessage(sock.recv(16))
+    seq,ack,id,length,ACK,SYN,FIN,_,_,_=unpackMessage(sock.recvfrom(16)[0])
     log(f"接收四次挥手其二，ACK={ACK}，seq={seq}，ack={ack}")
     if(ACK!=1 or ack!=curseq+1):
         raise RuntimeError
@@ -173,7 +174,7 @@ except:
     sys.exit(1)
 # 四次挥手其三
 try:
-    seq,ack,id,length,ACK,SYN,FIN,_,_,_=unpackMessage(sock.recv(16))
+    seq,ack,id,length,ACK,SYN,FIN,_,_,_=unpackMessage(sock.recvfrom(16)[0])
     log(f"接收四次挥手其三，FIN={FIN}，ACK={ACK}，seq={seq}，ack={ack}")
     if(FIN!=1 or ACK!=1 or ack!=curseq+1):
         raise RuntimeError
@@ -187,7 +188,7 @@ try:
     curseq=ack
     curack=seq+1
     log(f"发送四次挥手其四，ACK=1，seq={curseq}")
-    sock.sendall(packMessage(curseq,0,0,1,0,0,b''))
+    sock.sendto(packMessage(curseq,0,0,1,0,0,b''),(serverIP,serverPort))
 except:
     print("四次挥手其四失败")
     log("接收四次挥手其四失败")
