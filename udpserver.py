@@ -126,9 +126,6 @@ while (True):
                 thread=threading.Thread(target=cope,args=(sock,address,clients[address]))
                 thread.start()
             clients[address].put(msg)
-    except KeyboardInterrupt:
-        print("服务器关闭")
-        break
     except:
         print("连接错误")
         sock.close()
