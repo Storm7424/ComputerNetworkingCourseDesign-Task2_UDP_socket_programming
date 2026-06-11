@@ -99,7 +99,7 @@ dataLength=[]
 sendingCount=0
 curpos=0
 try:
-    with open("text.txt","r") as text:
+    with open("text.txt","r",encoding="utf-8") as text:
         string=text.read()
         for i in range(count):
             length = random.randint(40, 80)
