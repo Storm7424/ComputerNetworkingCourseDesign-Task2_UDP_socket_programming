@@ -44,6 +44,7 @@ def cope(sock,address,msgqueue):
             raise RuntimeError
         seq,ack,id,length,ACK,SYN,FIN,_,_,_=unpackMessage(msg)
         if(ACK!=0 or SYN!=1 or id^bitmask<0 or id^bitmask>9999):
+            print("id字段不合法")
             raise RuntimeError
         log(address,f"接收三次握手其一，SYN=1,seq={seq}")
         # 三次握手其二
