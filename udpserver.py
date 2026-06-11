@@ -49,8 +49,8 @@ def cope(sock,address,msgqueue):
         # 三次握手其二
         curseq=ack
         curack=seq+1
-        sock.sendto(packMessage(curseq, curack,0, 1, 1, 0, b''),address)
         log(address,f"发送三次握手其二，SYN=1，ACK=1，seq={curseq}，ack={curack}")
+        sock.sendto(packMessage(curseq, curack,0, 1, 1, 0, b''),address)
         # 三次握手其三
         msg=msgqueue.get()
         if(len(msg)<16):
@@ -83,11 +83,11 @@ def cope(sock,address,msgqueue):
         # 四次挥手其二
         curseq=ack
         curack=seq+1
-        sock.sendto(packMessage(curseq, curack,0, 1, 0, 0, b''),address)
         log(address,f"发送四次挥手其二，ACK=1，seq={curseq}，ack={curack}")
+        sock.sendto(packMessage(curseq, curack,0, 1, 0, 0, b''),address)
         # 四次挥手其三
-        sock.sendto(packMessage(curseq, curack,0, 1, 0, 1, b''),address)
         log(address,f"发送四次挥手其三，FIN=1，ACK=1，seq={curseq}，ack={curack}")
+        sock.sendto(packMessage(curseq, curack,0, 1, 0, 1, b''),address)
         # 四次挥手其四
         msg=msgqueue.get()
         seq,ack,id,length,ACK,SYN,FIN,_,_,_=unpackMessage(msg)
