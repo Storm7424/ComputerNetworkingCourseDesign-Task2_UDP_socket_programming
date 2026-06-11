@@ -39,7 +39,7 @@ def cope(sock,address,msgqueue):
     try:
         # 三次握手其一
         # request_message=client.recv(13)
-        msg=msgqueue.get()
+        msg=msgqueue.get(timeout=5)
         if(len(msg)<16):
             raise RuntimeError
         seq,ack,id,length,ACK,SYN,FIN,_,_,_=unpackMessage(msg)
@@ -52,14 +52,14 @@ def cope(sock,address,msgqueue):
         log(address,f"发送三次握手其二，SYN=1，ACK=1，seq={curseq}，ack={curack}")
         sock.sendto(packMessage(curseq, curack,0, 1, 1, 0, b''),address)
         # 三次握手其三
-        msg=msgqueue.get()
+        msg=msgqueue.get(timeout=5)
         if(len(msg)<16):
             raise RuntimeError
         seq,ack,id,length,ACK,SYN,FIN,_,_,_=unpackMessage(msg)
         log(address,f"接收三次握手其三，SYN={SYN}，ACK={ACK}，seq={curseq}，ack={curack}")
 
         # 数据传输
-        msg=msgqueue.get()
+        msg=msgqueue.get(timeout=5)
         if(len(msg)<16):
             raise RuntimeError
         seq,ack,id,length,ACK,SYN,FIN,_,_,_=unpackMessage(msg[:16])
@@ -75,7 +75,7 @@ def cope(sock,address,msgqueue):
                 curack=expected_seq
                 sock.sendto(packMessage(curseq, curack,0, 1, 0, 0, b''),address)
                 log(address,f"发送ACK，ACK=1")
-            msg=msgqueue.get()
+            msg=msgqueue.get(timeout=5)
             seq,ack,id,length,ACK,SYN,FIN,_,_,_=unpackMessage(msg[:16])
             data=msg[16:].decode()
         # 四次挥手其一
@@ -89,7 +89,7 @@ def cope(sock,address,msgqueue):
         log(address,f"发送四次挥手其三，FIN=1，ACK=1，seq={curseq}，ack={curack}")
         sock.sendto(packMessage(curseq, curack,0, 1, 0, 1, b''),address)
         # 四次挥手其四
-        msg=msgqueue.get()
+        msg=msgqueue.get(timeout=5)
         seq,ack,id,length,ACK,SYN,FIN,_,_,_=unpackMessage(msg)
         log(address,f"接收四次挥手其四，ACK={ACK}，seq={seq}")
     except:

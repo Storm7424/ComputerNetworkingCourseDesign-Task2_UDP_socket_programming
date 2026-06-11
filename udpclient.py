@@ -163,6 +163,7 @@ except:
     sys.exit(1)
 # 四次挥手其二
 try:
+    sock.settimeout(curTimeoutInterval)
     seq,ack,id,length,ACK,SYN,FIN,_,_,_=unpackMessage(sock.recvfrom(16)[0])
     log(f"接收四次挥手其二，ACK={ACK}，seq={seq}，ack={ack}")
     if(ACK!=1 or ack!=curseq+1):
@@ -174,6 +175,7 @@ except:
     sys.exit(1)
 # 四次挥手其三
 try:
+    sock.settimeout(curTimeoutInterval)
     seq,ack,id,length,ACK,SYN,FIN,_,_,_=unpackMessage(sock.recvfrom(16)[0])
     log(f"接收四次挥手其三，FIN={FIN}，ACK={ACK}，seq={seq}，ack={ack}")
     if(FIN!=1 or ACK!=1 or ack!=curseq+1):
