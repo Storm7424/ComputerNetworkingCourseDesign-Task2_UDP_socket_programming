@@ -118,8 +118,8 @@ while(leftBorder<count):
     while(rightBorder<count and sum(dataLength[leftBorder:rightBorder+1])<=WINDOWSIZE):
         curdata=dataCollection[rightBorder]
         log(f"发送第{rightBorder+1}个数据报（共计{count}个），第{sum(dataLength[:rightBorder])+1}~{sum(dataLength[:rightBorder+1])}个字节已经发送，seq={rightBorder}，len={len(curdata)}")
-        print(f"第{rightBorder+1}个（第{sum(dataLength[:rightBorder])+1}~{sum(dataLength[:rightBorder+1])}字节）client端已经发送")
         sock.sendall(packMessage(rightBorder,0,0,1,0,0,curdata))
+        print(f"第{rightBorder+1}个（第{sum(dataLength[:rightBorder])+1}~{sum(dataLength[:rightBorder+1])}字节）client端已经发送")
         sendingCount+=1
         sendTime[rightBorder]=time.time()
         rightBorder+=1
